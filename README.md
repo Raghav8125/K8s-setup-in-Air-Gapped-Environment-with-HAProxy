@@ -25,6 +25,20 @@ Use scp or USB to copy the .rpm file to your HAProxy host.
 rpm -ivh haproxy-*.rpm
 
 ```
+⚙️ Configuration
+
+### 1. Edit HAProxy config file  
+
+Edit at /etc/haproxy/haproxy.cfg   use the github file in the folder
+
+### 2. Restart and Enable HAProxy
+
+```bash
+
+systemctl restart haproxy
+systemctl enable haproxy
+
+```
 
 
 
