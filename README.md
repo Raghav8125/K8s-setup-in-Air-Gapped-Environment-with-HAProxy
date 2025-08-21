@@ -41,21 +41,11 @@ systemctl enable haproxy
 ```
 
 
+## 🚀 Kubernetes Air-Gapped HA Cluster Setup
 
+This repository contains the complete setup and documentation for deploying a **Kubernetes HA cluster in an air-gapped environment**.
 
-
-
-
-
-
-
-
-
-
-
-# 🚀 Kubernetes Air-Gapped HA Cluster Setup
-
-This repository contains the complete setup and documentation for deploying a **Kubernetes HA cluster in an air-gapped environment**, using:
+### Prerequsite:
 
 - ✅ 3 Control plane nodes
 - ✅ 1 Worker node
@@ -66,5 +56,24 @@ This repository contains the complete setup and documentation for deploying a **
 
 ---
 
-## 📌 Architecture Overview
+# 🖥️ Kubernetes Node Setup (Air-Gapped Environment)
+
+> 🔁 These steps must be performed on **all control plane and worker nodes**.
+
+---
+
+## 📌 1. Disable SELinux and Firewall
+
+Kubernetes requires these to be disabled for consistent networking and container behavior.
+
+```bash
+# Disable SELinux
+sudo setenforce 0
+
+# Disable and stop the firewall
+sudo systemctl stop firewalld
+sudo systemctl disable firewalld
+
+```
+
 
