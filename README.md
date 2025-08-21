@@ -170,6 +170,18 @@ sudo cp /etc/containerd/certs.d/192.168.95.35:9443/ca.crt  /etc/pki/ca-trust/sou
 
 sudo update-ca-trust extract
 
+
+2.	Edit /etc/containerd/config.toml and apply the full configuration including:
+   a.	Custom registry endpoint
+   b.	Authentication
+   c.	TLS CA file for containerd
+
+Restart containerd
+
+systemctl restart containerd
+
+Ensures containerd can pull images securely over HTTPS from your internal registry.   (Perform all these steps on all nodes)
+
 ```
 
 
