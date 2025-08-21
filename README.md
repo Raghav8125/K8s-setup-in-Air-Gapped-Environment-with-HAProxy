@@ -184,6 +184,117 @@ Ensures containerd can pull images securely over HTTPS from your internal regist
 
 ```
 
+### Initialize Kubernetes Cluster
+
+``` bash
+
+1.	Create a file named kubeadm-config.yaml:
+
+2.	Run kubeadm init
+
+kubeadm init --config kubeadm-config.yaml --upload-certs
+
+3.	Configure kubeconfig
+
+ mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+4.	Verify master node
+
+   kubectl get nodes
+
+```
+
+### Join Master and Worker Nodes
+
+```bash
+
+1.	Run the kubeadm join command (generated from kubeadm init) on:
+    a.	Other master nodes with --control-plane
+    b.	Worker nodes without the flag
+  	
+### For Master:
+ kubeadm join 192.168.95.71:6443 --token gg1mra.1xc4b7u2958me4wm \
+        --discovery-token-ca-cert-hash sha256:e94f2eaeee6a5e7a6dda00bd3be0b8802ce29e82269fa00db4e9a2f87682ba89 \
+        --control-plane --certificate-key 33c778f832040391e08c77c03f15a9ccc8d31835da263db4315f1c8ec4107d0b
+
+#### For Worker:
+ kubeadm join 192.168.95.71:6443 --token gg1mra.1xc4b7u2958me4wm \
+        --discovery-token-ca-cert-hash sha256:e94f2eaeee6a5e7a6dda00bd3be0b8802ce29e82269fa00db4e9a2f87682ba89 
+
+2.	Then go to master node and check if all the nodes are
+
+   kubectl get nodes -o wide
+
+ ```
+
+### Install Calico (CNI Plugin)
+
+Calico is a Container Network Interface (CNI) plugin for Kubernetes that enables secure networking for containers. It provides networking and network policy capabilities, allowing pods to communicate with each other while enforcing traffic restrictions as needed.
+Why it's needed: Kubernetes itself does not provide networking implementation. Calico fulfills this role by enabling pod-to-pod communication and enforcing security policies.
+
+## 📥 1. Download Calico YAML
+
+On an internet-connected machine:
+
+```bash
+
+wget https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/calico.yaml
+
+2. Pull Required Calico Images
+
+Find the images referenced in calico.yaml. As of Calico v3.27, the main ones are:
+
+
+
+docker pull docker.io/calico/cni:v3.27.0
+docker pull docker.io/calico/kube-controllers:v3.27.0
+docker pull docker.io/calico/node:v3.27.0
+docker pull docker.io/calico/pod2daemon-flexvol:v3.27.0
+
+
+
+3. Tag & Push to Private Registry
+
+docker tag calico/cni:v3.27.0 192.168.95.71:9443/k8s/calico/cni:v3.27.0
+docker push 192.168.95.71:9443/k8s/calico/cni:v3.27.0
+
+docker tag calico/kube-controllers:v3.27.0 192.168.95.71:9443/k8s/calico/kube-controllers:v3.27.0
+docker push 192.168.95.71:9443/k8s/calico/kube-controllers:v3.27.0
+
+docker tag calico/node:v3.27.0 192.168.95.71:9443/k8s/calico/node:v3.27.0
+docker push 192.168.95.71:9443/k8s/calico/node:v3.27.0
+
+docker tag calico/pod2daemon-flexvol:v3.27.0 192.168.95.71:9443/k8s/calico/pod2daemon-flexvol:v3.27.0
+docker push 192.168.95.71:9443/k8s/calico/pod2daemon-flexvol:v3.27.0
+
+
+4. Update calico.yaml Image References
+
+Edit calico.yaml and replace all docker.io image references with your private registry paths.
+
+Find and Replace:
+
+From: image: docker.io/calico/node:v3.27.0  To: image: 192.168.95.71:9443/k8s/calico/node:v3.27.0    (Repeat for all Calico images.)
+
+5. kubectl apply -f calico.yaml
+
+
+6. Verify Node Readiness
+
+Kubectl get nodes 
+
+Expected output:
+
+NAME             STATUS   ROLES           AGE     VERSION
+control-plane-1  Ready    control-plane   5m      v1.33.0
+worker-1         Ready    <none>          3m      v1.33.0
+
+
+
+
+
 
 
 
