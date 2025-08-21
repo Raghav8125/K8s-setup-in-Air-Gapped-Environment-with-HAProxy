@@ -56,11 +56,10 @@ This repository contains the complete setup and documentation for deploying a **
 
 ---
 
-# 🖥️ Kubernetes Node Setup (Air-Gapped Environment)
+### 🖥️ Kubernetes Node Setup (Air-Gapped Environment)
 
 > 🔁 These steps must be performed on **all control plane and worker nodes**.
 
----
 
 ## 📌 1. Disable SELinux and Firewall
 
@@ -75,5 +74,108 @@ sudo systemctl stop firewalld
 sudo systemctl disable firewalld
 
 ```
+
+### 2. Add Kubernetes YUM Repository (On Internet machine)
+
+```bash
+
+cat <<EOF | sudo tee /etc/yum.repos.d/kubernetes.repo
+[kubernetes]
+name=Kubernetes
+baseurl=https://pkgs.k8s.io/core:/stable:/v1.32/rpm/
+enabled=1
+gpgcheck=1
+gpgkey=https://pkgs.k8s.io/core:/stable:/v1.32/rpm/repodata/repomd.xml.key
+EOF
+```
+
+### 3. Download Required RPM Packages (Internet Machine)
+
+```bash
+
+# Create a directory to store packages
+mkdir k8s-rpms && cd k8s-rpms
+
+# Download Kubernetes components
+yum install --downloadonly --downloaddir=. kubeadm kubelet kubectl
+
+# Download container runtime (e.g., containerd)
+yum install --downloadonly --downloaddir=. containerd
+
+🎯 These RPMs can now be copied to all your air-gapped nodes.
+```
+
+### 4. Install RPMs on Air-Gapped Nodes
+
+```bash
+
+cd /path/to/rpms/
+
+sudo yum localinstall *.rpm --disablerepo="*"
+
+```
+
+### 5. Disable Swap
+```bash
+
+# Temporarily disable swap
+sudo swapoff -a
+
+# Permanently disable swap on reboot
+sudo sed -i '/ swap / s/^/#/' /etc/fstab
+
+```
+### 6. Load Kernel Modules and Set Sysctl Params
+
+Kubernetes networking requires certain kernel modules and sysctl settings:
+
+```bash
+# Enable br_netfilter module at boot
+cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
+br_netfilter
+EOF
+
+# Apply module now
+sudo modprobe br_netfilter
+
+# Set required sysctl parameters
+cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-iptables  = 1
+net.ipv4.ip_forward                 = 1
+net.bridge.bridge-nf-call-ip6tables = 1
+EOF
+
+# Apply settings
+sudo sysctl --system
+
+```
+
+### 7. Configure Containerd
+
+Containerd must be configured to trust the private registry (especially when using self-signed SSL certs).
+
+```bash
+
+Step 1: Create cert directory for registry
+
+sudo mkdir -p /etc/containerd/certs.d/192.168.95.35:9443
+
+# Copy the self-signed certificate
+
+sudo cp /path/to/registry.crt /etc/containerd/certs.d/192.168.95.35:9443/ca.crt
+
+Step 2: Add Registry Certificate to System Trust Store
+
+sudo cp /etc/containerd/certs.d/192.168.95.35:9443/ca.crt  /etc/pki/ca-trust/source/anchors/registry.crt
+
+sudo update-ca-trust extract
+
+```
+
+
+
+
+
+
 
 
